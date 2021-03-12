@@ -1,1 +1,1 @@
-web: streamlit run password.py
+web: sh setup.sh streamlit run password.py
