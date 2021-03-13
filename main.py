@@ -193,7 +193,7 @@ def login():
 				st.success("Logged in successfully.")
 				logged_in = True
 				logged_in_user = username
-				session_state_user.name = username
+				session_state_user.user_name = username
 				session_state_user.button_sent = True
 
 
@@ -290,10 +290,13 @@ def login():
 		pointer = db[session_state_user.user_name]
 		st.title("Update Existing records")
 		records = pointer.find({})
-		if records == None:
+		leng = list(records)
+	
+		if len(leng) == 0:
+			session_state_user.update = True
 			st.info("It's Empty in here.\nPlease save records first !!")
-		else:
-			for documents in records:
+		elif len(leng) > 0:
+			for documents in leng:
 				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
 			
 			org = st.beta_columns(2)
@@ -320,21 +323,22 @@ def login():
 		pointer = db[session_state_user.user_name]
 		st.title("View Saved Passwords")
 		records = pointer.find({})
-		if records == None:
+		leng = list(records)
+		if len(leng) == 0:
 			st.info("It's Empty in here.\nPlease save records first !!")
-		else:
-			for documents in records:
+		elif len(leng) > 0:
+			for documents in leng:
 				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
 
 	if session_state_user.delete:
 		pointer = db[session_state_user.user_name]
 		st.title("Delete Existing records")
 		records = pointer.find({})
-		print(records)
-		if records == {}:
+		leng = list(records)
+		if len(leng) == 0:
 			st.info("It's Empty in here.\nPlease save records first !!")
-		else:
-			for documents in records:
+		elif len(leng) > 0:
+			for documents in leng:
 				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
 			
 			org = st.beta_columns(2)
