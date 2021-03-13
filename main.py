@@ -7,6 +7,9 @@ import smtplib, ssl
 import SessionState
 import pyperclip
 
+PAGE_CONFIG = {"page_title" : "PassVault", "layout" : "centered"}
+st.set_page_config(**PAGE_CONFIG)
+
 #from multiapp import Multiapp
 
 # Global Variables for Dashboard
@@ -15,6 +18,7 @@ logged_in_user = ""
 
 #Dashboard Session state for user
 #session_state_user = SessionState.get(name= "", button_sent = False)
+
 
 #key = Fernet.generate_key()
 #with open("key.key", "w") as file:
@@ -25,9 +29,12 @@ with open('key.key', 'r') as file:
 
 f = Fernet(key.encode())
 
+with open("MongoDb.key", 'r') as file:
+	mongo_key = f.decrypt(file.read().encode()).decode()
+
 # Creating a MongoDb Client
 
-client = pymongo.MongoClient('mongodb+srv://admin:admin@password-manager.bl1uj.mongodb.net/Password_manager?retryWrites=true&w=majority')
+client = pymongo.MongoClient('mongodb+srv://admin:{mongo_key}@password-manager.bl1uj.mongodb.net/Password_manager?retryWrites=true&w=majority'.format(mongo_key = mongo_key))
 db = client['Password_manager']
 cursor = db['Login']
 
@@ -38,7 +45,7 @@ def send_mail(mail):
 	port = 465
 	email = "passvault6217@gmail.com"
 	with open("password.key", "r") as file:
-		password = file.read()
+		password = f.decrypt(file.read().encode()).decode()
 	
 	message = """\
 Subject: Registration Succesfull.
@@ -64,7 +71,7 @@ Thankyou for choosing us :)"""
 
 def random_password_generator():
 	# Session state for multi buttons inside Streamlit
-	session_state = SessionState.get(name='', button_sent = False)
+	session_state = SessionState.get(name= '',user_name = '', button_sent1 = False, button_sent= False, insert = False, update = False, view = False, delete = False, new = False, logout =False, logout_count = 0)
 
 	st.title("Random Password Generator")
 	st.subheader("Please select an option:")
@@ -81,62 +88,73 @@ def random_password_generator():
 
 	if choice1:
 		session_state.name = 'choice1'
-		session_state.button1 = True
+		session_state.button_sent1 = True
 	elif choice2:
 		session_state.name = 'choice2'
-		session_state.button2 = True
+		session_state.button_sent1 = True
 	elif choice3:
 		session_state.name = 'choice3'
-		session_state.button_sent = True
+		session_state.button_sent1 = True
 
 
-	if session_state.name == 'choice1' and session_state.button_sent:
+	if session_state.name == 'choice1' and session_state.button_sent1:
 		password = ''
-
 		l = st.beta_columns(2)	
 		length = l[0].number_input("Length of the password:")
-
 		s = st.beta_columns(2)
 		submit = s[0].button("submit")
 
 		if submit:
-			for i in range(int(length)):
-				password += random.choice([random.choice(string.ascii_lowercase), random.choice(string.ascii_uppercase), random.choice(string.digits)])
+			if length < 0:
+				st.warning("Please enter a positive number !!")
+			elif length < 5:
+				st.warning("Please select the length to be >= 5 for a secure password !!")
+			elif length >= 5:
+				for i in range(int(length)):
+					password += random.choice([random.choice(string.ascii_lowercase), random.choice(string.ascii_uppercase), random.choice(string.digits)])
  
-			st.text("The generated password is {}".format(password))
-			pyperclip.copy(password)
-			st.info("The Password has been copied to your clipboard !!")
+				st.text("The generated password is {}".format(password))
+				pyperclip.copy(password)
+				st.info("The Password has been copied to your clipboard !!")
 
-	elif session_state.name == 'choice2' and session_state.button_sent:
+	elif session_state.name == 'choice2' and session_state.button_sent1:
 		password = ''
 		l = st.beta_columns(2)	
 		length = l[0].number_input("Length of the password:")
-		for i in range(int(length)):
-			password += random.choice([random.choice(string.ascii_lowercase)])
-
 		s = st.beta_columns(2)
 		submit = s[0].button("submit")
 
 		if submit:
-			st.text("The generated password is {}".format(password))
-			pyperclip.copy(password)
-			st.info("The Password has been copied to your clipboard !!")
+			if length < 0:
+				st.warning("Please enter a positive number !!")
+			elif length < 5:
+				st.warning("Please select the length to be >= 5 for a secure password !!")
+			elif lenght >= 5:
+				for i in range(int(length)):
+					password += random.choice([random.choice(string.ascii_lowercase)])
+				st.text("The generated password is {}".format(password))
+				pyperclip.copy(password)
+				st.info("The Password has been copied to your clipboard !!")
 
 
-	elif session_state.name == 'choice3' and session_state.button_sent:
+	elif session_state.name == 'choice3' and session_state.button_sent1:
 		password = ''
 		l = st.beta_columns(2)	
 		length = l[0].number_input("Length of the password:")
-		for i in range(int(length)):
-			password += random.choice([random.choice(string.ascii_uppercase)])
-
 		s = st.beta_columns(2)
 		submit = s[0].button("submit")
 
 		if submit:
-			st.text("The generated password is {}".format(password))
-			pyperclip.copy(password)
-			st.info("The Password has been copied to your clipboard !!")
+			if length < 0:
+				st.warning("Please enter a positive number !!")
+			elif length < 5:
+				st.warning("Please select the length to be >= 5 for a secure password !!")
+			elif length >= 5:
+				for i in range(int(length)):
+					password += random.choice([random.choice(string.ascii_uppercase)])
+				st.text("The generated password is {}".format(password))
+				pyperclip.copy(password)
+				st.info("The Password has been copied to your clipboard !!")
 
 
 
@@ -145,7 +163,7 @@ def login():
 	global logged_in
 	global logged_in_user
 
-	session_state_user = SessionState.get(user_name = '', button_sent = False, insert = False, update = False, view = False, delete = False, new = False)
+	session_state_user = SessionState.get(name = '', user_name = '', button_sent1 = False, button_sent = False, insert = False, update = False, view = False, delete = False, new = False, logout =False, logout_count = 0)
 
 	st.title("Login")
 	st.subheader("Please enter your details:")
@@ -163,6 +181,7 @@ def login():
 	if choice:
 		session_state_user.user_name = username
 		session_state_user.sent_button = True
+		session_state_user.logout_count = 0
 
 		db_user = cursor.find_one({'username': username})
 		if db_user == None:
@@ -197,6 +216,9 @@ def login():
 		ch1 = st.beta_columns(2)
 		delete = ch1[0].button("Delete Entry")
 
+		log = st.beta_columns(2)
+		logout = log[0].button("Logout")
+
 		if insert:
 			session_state_user.button_sent = True
 			session_state_user.insert = True
@@ -221,6 +243,14 @@ def login():
 		elif delete:
 			session_state_user.button_sent = True
 			session_state_user.delete = True
+			session_state_user.insert = False
+			session_state_user.update = False
+			session_state_user.view = False
+
+		elif logout:
+			session_state_user.logout = True
+			session_state_user.button_sent = False
+			session_state_user.delete = False
 			session_state_user.insert = False
 			session_state_user.update = False
 			session_state_user.view = False
@@ -260,56 +290,72 @@ def login():
 		pointer = db[session_state_user.user_name]
 		st.title("Update Existing records")
 		records = pointer.find({})
-		for documents in records:
-			st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
-		
-		org = st.beta_columns(2)
-		organization = org[0].text_input("Organizations Name:")
-		password = org[1].text_input("Enter Password:", type = 'password')
-		session_state_user.organization_name = organization
-		s = st.beta_columns(2)
-		if s[0].button("update"):
-			find = pointer.find_one({'Organization' : organization})
-			if find:
-				try:
-					old = {'Organization' : find['Organization'],
-					'Password' : find['Password']}
-					new = {'$set' : {'Organization' : organization, 'Password' : f.encrypt(password.encode())}}
-					pointer.update_one(old, new)
-				except Exception as e:
-					st.error(e)
+		if records == None:
+			st.info("It's Empty in here.\nPlease save records first !!")
+		else:
+			for documents in records:
+				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
+			
+			org = st.beta_columns(2)
+			organization = org[0].text_input("Organizations Name:")
+			password = org[1].text_input("Enter Password:", type = 'password')
+			session_state_user.organization_name = organization
+			s = st.beta_columns(2)
+			if s[0].button("update"):
+				find = pointer.find_one({'Organization' : organization})
+				if find:
+					try:
+						old = {'Organization' : find['Organization'],
+						'Password' : find['Password']}
+						new = {'$set' : {'Organization' : organization, 'Password' : f.encrypt(password.encode())}}
+						pointer.update_one(old, new)
+					except Exception as e:
+						st.error(e)
+					else:
+						st.success("Details Updated Succesfully !!")
 				else:
-					st.success("Details Updated Succesfully !!")
-			else:
-				st.error("No such record exists !!")
+					st.error("No such record exists !!")
 
 	if session_state_user.view:
 		pointer = db[session_state_user.user_name]
 		st.title("View Saved Passwords")
 		records = pointer.find({})
-		for documents in records:
-			st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
+		if records == None:
+			st.info("It's Empty in here.\nPlease save records first !!")
+		else:
+			for documents in records:
+				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
 
 	if session_state_user.delete:
 		pointer = db[session_state_user.user_name]
 		st.title("Delete Existing records")
 		records = pointer.find({})
-		for documents in records:
-			st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
-		
-		org = st.beta_columns(2)
-		organization = org[0].text_input("Organizations Name:")
-		session_state_user.organization_name = organization
-		s = st.beta_columns(2)
-		if s[0].button("delete"):
-			if pointer.find_one({'Organization' : organization}):
-				pointer.delete_one({
-					'Organization' : organization,
-					})
-				st.success("Details Deleted Succesfully !!")
-			else:
-				st.error("No Such Record Exists !!")
+		print(records)
+		if records == {}:
+			st.info("It's Empty in here.\nPlease save records first !!")
+		else:
+			for documents in records:
+				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
+			
+			org = st.beta_columns(2)
+			organization = org[0].text_input("Organizations Name:")
+			session_state_user.organization_name = organization
+			s = st.beta_columns(2)
+			if s[0].button("delete"):
+				if pointer.find_one({'Organization' : organization}):
+					pointer.delete_one({
+						'Organization' : organization,
+						})
+					st.success("Details Deleted Succesfully !!")
+				else:
+					st.error("No Such Record Exists !!")
 
+	if session_state_user.logout and session_state_user.button_sent == False:
+		if session_state_user.logout_count == 0:
+			st.info("Please click logout once again to logout !!")
+			session_state_user.logout_count += 1
+		else:
+			st.info("You have succsessfully logged out !!")
 
 def register():
 # Page Title
@@ -338,32 +384,34 @@ def register():
 	submit = space[2].button("submit")
 
 	if submit:
-		if password1 == password2:
-			exists = cursor.find_one({'username': username})
-			if exists:
-				st.error("This username already exists !!")
-			else:
-				db_insert = cursor.insert_one({
-				'name': name + ' ' + surname,
-				'username': username,
-				'password': f.encrypt(password1.encode()),
-				'email': email,
-				'phone': int(phone),
-				})
-
-				if db_insert:
-					try:
-						send_mail(email)
-					except Exception as e:
-						st.error(e)
-
-					st.success("Succesfully Registered.")
+		if agree:
+			if password1 == password2:
+				exists = cursor.find_one({'username': username})
+				if exists:
+					st.error("This username already exists !!")
 				else:
-					st.error('Something went wrong !!')
+					db_insert = cursor.insert_one({
+					'name': name + ' ' + surname,
+					'username': username,
+					'password': f.encrypt(password1.encode()),
+					'email': email,
+					'phone': int(phone),
+					})
 
+					if db_insert:
+						try:
+							send_mail(email)
+						except Exception as e:
+							st.error(e)
+
+						st.success("Succesfully Registered.")
+					else:
+						st.error('Something went wrong !!')
+
+			else:
+				st.error("The two passwords did not match !!")
 		else:
-			st.error("The two passwords did not match !!")
-
+			st.warning("Please select the 'agree' checkbox !!")
 
 def home():
 	st.title("Welcome to our Password Manager.")
@@ -393,6 +441,7 @@ Have them ready when you need them and instantly typed for you.''')
 	st.write("")
 	st.title("Don't wait. Get started today.")
 	st.write("")
+	place = st.beta_columns(2)
 	st.write("For any Problem or Queries You can contact us at: passvault6217@gmail.com")
 
 #app = Multiapp()
