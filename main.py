@@ -129,7 +129,7 @@ def random_password_generator():
 				st.warning("Please enter a positive number !!")
 			elif length < 5:
 				st.warning("Please select the length to be >= 5 for a secure password !!")
-			elif lenght >= 5:
+			elif length >= 5:
 				for i in range(int(length)):
 					password += random.choice([random.choice(string.ascii_lowercase)])
 				st.text("The generated password is {}".format(password))
