@@ -114,7 +114,7 @@ def random_password_generator():
 					password += random.choice([random.choice(string.ascii_lowercase), random.choice(string.ascii_uppercase), random.choice(string.digits)])
  
 				st.text("The generated password is {}".format(password))
-				pyperclip.copy(password)
+				#pyperclip.copy(password)
 				st.info("The Password has been copied to your clipboard !!")
 
 	elif session_state.name == 'choice2' and session_state.button_sent1:
@@ -133,7 +133,7 @@ def random_password_generator():
 				for i in range(int(length)):
 					password += random.choice([random.choice(string.ascii_lowercase)])
 				st.text("The generated password is {}".format(password))
-				pyperclip.copy(password)
+				#pyperclip.copy(password)
 				st.info("The Password has been copied to your clipboard !!")
 
 
@@ -153,7 +153,7 @@ def random_password_generator():
 				for i in range(int(length)):
 					password += random.choice([random.choice(string.ascii_uppercase)])
 				st.text("The generated password is {}".format(password))
-				pyperclip.copy(password)
+				#pyperclip.copy(password)
 				st.info("The Password has been copied to your clipboard !!")
 
 
