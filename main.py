@@ -39,6 +39,8 @@ db = client['Password_manager']
 cursor = db['Login']
 
 
+with open('password.key', 'w') as file:
+	file.write(f.encrypt('givvpboplvahgqvs'.encode()).decode())
 
 def send_mail(mail):
 	context = ssl.create_default_context()
