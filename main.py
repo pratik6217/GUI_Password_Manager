@@ -7,7 +7,7 @@ import smtplib, ssl
 import SessionState
 import pyperclip
 
-PAGE_CONFIG = {"page_title" : "PassVault", "layout" : "centered"}
+PAGE_CONFIG = {"page_title" : "PassVault",'page_icon': './download.png', "layout" : "centered"}
 st.set_page_config(**PAGE_CONFIG)
 
 #from multiapp import Multiapp
@@ -73,7 +73,7 @@ Thankyou for choosing us :)"""
 
 def random_password_generator():
 	# Session state for multi buttons inside Streamlit
-	session_state = SessionState.get(name= '',user_name = '', button_sent1 = False, button_sent= False, insert = False, update = False, view = False, delete = False, new = False, logout =False, logout_count = 0)
+	session_state = SessionState.get(name= '',user_name = '', button_sent1 = False, button_sent= False, insert = False, update = False, view = False, delete = False, new = False, logout =False, logout_count = 0, is_logged_in = False, home = True)
 
 	st.title("Random Password Generator")
 	st.subheader("Please select an option:")
@@ -164,8 +164,7 @@ def random_password_generator():
 def login():
 	global logged_in
 	global logged_in_user
-
-	session_state_user = SessionState.get(name = '', user_name = '', button_sent1 = False, button_sent = False, insert = False, update = False, view = False, delete = False, new = False, logout =False, logout_count = 0)
+	
 
 	st.title("Login")
 	st.subheader("Please enter your details:")
@@ -200,9 +199,24 @@ def login():
 
 
 	if session_state_user.button_sent:
+		session_state_user.is_logged_in = True
+		st.button('Go to My Dashboard -->')
 
 	#Pointer for MongoDb for this user
 
+def dashboard():
+	menu = ['Password Vault', 'Random Password Generator']
+	user_choice = st.sidebar.selectbox('Menu', menu)
+	username = session_state_user.user_name
+	st.sidebar.subheader('Tips to keep your accounts safe: ')
+	st.sidebar.write('1. Never reveal your passwords to others.')
+	st.sidebar.write('2. Use different passwords for different accounts.')
+	st.sidebar.write('3. Use multi-factor authentication (MFA).')
+	# st.sidebar.write('4. Length trumps complexity.')
+	st.sidebar.write('5. Make passwords that are hard to guess but easy to remember.')
+	st.sidebar.image('./dash.jpg')
+	if user_choice == 'Password Vault':
+	
 		st.title("Welcome to your Dashboard, {}.".format(username))
 		st.subheader("Please Choose one of the following:")
 
@@ -258,110 +272,136 @@ def login():
 			session_state_user.view = False
 
 
-	if session_state_user.insert:
+		if session_state_user.insert:
 
-		st.title("Insert")
-		st.subheader("Enter the Details:")
+			st.title("Insert")
+			st.subheader("Enter the Details:")
 
-		org = st.beta_columns(2)
-		organization = org[0].text_input("Organizations Name:")
-		password = org[1].text_input("Enter Password:", type = 'password')
-		session_state_user.organization_name = organization
-
-		s = st.beta_columns(2)
-		i = s[0].button("Insert")
-
-		if i:
-			pointer = db[session_state_user.user_name]
-			if pointer.find_one({'Organization': organization}):
-				st.error("This Organization already exists !!")
-			else:
-				try:
-					pointer.insert_one({
-					'Organization' : organization,
-					'Password' : f.encrypt(password.encode())
-					})
-
-				except Exception as e:
-					st.error(e)
-				
-				else:
-					st.success("Records added Successfully !!")
-
-	if session_state_user.update:
-		pointer = db[session_state_user.user_name]
-		st.title("Update Existing records")
-		records = pointer.find({})
-		leng = list(records)
-	
-		if len(leng) == 0:
-			session_state_user.update = True
-			st.info("It's Empty in here.\nPlease save records first !!")
-		elif len(leng) > 0:
-			for documents in leng:
-				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
-			
 			org = st.beta_columns(2)
 			organization = org[0].text_input("Organizations Name:")
 			password = org[1].text_input("Enter Password:", type = 'password')
 			session_state_user.organization_name = organization
+
 			s = st.beta_columns(2)
-			if s[0].button("update"):
-				find = pointer.find_one({'Organization' : organization})
-				if find:
+			i = s[0].button("Insert")
+
+			if i:
+				pointer = db[session_state_user.user_name]
+				if pointer.find_one({'Organization': organization}):
+					st.error("This Organization already exists !!")
+				elif len(password) < 5:
+					st.warning('Please create a stronger Password !!')
+				else:
 					try:
-						old = {'Organization' : find['Organization'],
-						'Password' : find['Password']}
-						new = {'$set' : {'Organization' : organization, 'Password' : f.encrypt(password.encode())}}
-						pointer.update_one(old, new)
+						pointer.insert_one({
+						'Organization' : organization,
+						'Password' : f.encrypt(password.encode())
+						})
+
 					except Exception as e:
 						st.error(e)
+					
 					else:
-						st.success("Details Updated Succesfully !!")
-				else:
-					st.error("No such record exists !!")
+						st.success("Records added Successfully !!")
 
-	if session_state_user.view:
-		pointer = db[session_state_user.user_name]
-		st.title("View Saved Passwords")
-		records = pointer.find({})
-		leng = list(records)
-		if len(leng) == 0:
-			st.info("It's Empty in here.\nPlease save records first !!")
-		elif len(leng) > 0:
-			for documents in leng:
-				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
+		if session_state_user.update:
+			pointer = db[session_state_user.user_name]
+			st.title("Update Existing records")
+			records = pointer.find({})
+			leng = list(records)
+		
+			if len(leng) == 0:
+				session_state_user.update = True
+				st.info("It's Empty in here.\nPlease save records first !!")
+			elif len(leng) > 0:
+				for documents in leng:
+					d = st.beta_columns(2)
+					d[0].text_input('Organization: ', documents['Organization'], key= documents['Organization'])
+					d[1].text_input('Password', f.decrypt(documents['Password']).decode(), type = 'password', key= documents['Password'])
+					# st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
+				
+				st.write(' ')
+				st.subheader('Enter New Credentials to update:')
+				org = st.beta_columns(2)
+				organization = org[0].text_input("Organizations Name:")
+				password = org[1].text_input("Enter New Password:", type = 'password')
+				session_state_user.organization_name = organization
+				s = st.beta_columns(6)
+				s[1].button('refresh')
+				if s[0].button("update"):
+					find = pointer.find_one({'Organization' : organization})
+					if find:
+						if len(password) < 5:
+							st.warning('Please create a stronger Password !!')
+						else:
+							old = {'Organization' : find['Organization'],
+								'Password' : find['Password']}
+							if f.decrypt(old['Password']).decode() == password:
+								st.warning('Old and New Passwords cannot be same !!')
+							else:
+								try:
+									new = {'$set' : {'Organization' : organization, 'Password' : f.encrypt(password.encode())}}
+									pointer.update_one(old, new)
+								except Exception as e:
+									st.error(e)
+								else:
+									st.success("Details Updated Succesfully !!")
+					else:
+						st.error("No such record exists !!")
 
-	if session_state_user.delete:
-		pointer = db[session_state_user.user_name]
-		st.title("Delete Existing records")
-		records = pointer.find({})
-		leng = list(records)
-		if len(leng) == 0:
-			st.info("It's Empty in here.\nPlease save records first !!")
-		elif len(leng) > 0:
-			for documents in leng:
-				st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
-			
-			org = st.beta_columns(2)
-			organization = org[0].text_input("Organizations Name:")
-			session_state_user.organization_name = organization
-			s = st.beta_columns(2)
-			if s[0].button("delete"):
-				if pointer.find_one({'Organization' : organization}):
-					pointer.delete_one({
-						'Organization' : organization,
-						})
-					st.success("Details Deleted Succesfully !!")
-				else:
-					st.error("No Such Record Exists !!")
+		if session_state_user.view:
+			pointer = db[session_state_user.user_name]
+			st.title("View Saved Passwords")
+			records = pointer.find({})
+			leng = list(records)
+			if len(leng) == 0:
+				st.info("It's Empty in here.\nPlease save records first !!")
+			elif len(leng) > 0:
+				for documents in leng:
+					d = st.beta_columns(2)
+					d[0].text_input('Organization: ', documents['Organization'], key= documents['Organization'])
+					d[1].text_input('Password', f.decrypt(documents['Password']).decode(), type = 'password', key= documents['Password'])
+					# st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
 
-	if session_state_user.logout and session_state_user.button_sent == False:
-		if session_state_user.logout_count == 0:
-			st.info("Please click logout once again to logout !!")
-			session_state_user.logout_count += 1
-		else:
-			st.info("You have succsessfully logged out !!")
+		if session_state_user.delete:
+			pointer = db[session_state_user.user_name]
+			st.title("Delete Existing records")
+			records = pointer.find({})
+			leng = list(records)
+			l = []
+			if len(leng) == 0:
+				st.info("It's Empty in here.\nPlease save records first !!")
+			elif len(leng) > 0:
+				for documents in leng:
+					l.append(documents['Organization'])
+				selection = st.radio('Organizations', l)
+				# st.text('Organization: {o} \nPassword: {p}'.format(o = documents['Organization'], p = f.decrypt(documents['Password']).decode()))
+				print(selection)
+				org = st.beta_columns(2)
+				organization = org[0].text_input("Organization Selected to delete:", selection)
+				session_state_user.organization_name = organization
+				s = st.beta_columns(6)
+				s[1].button('refresh')
+				if s[0].button("delete"):
+					if pointer.find_one({'Organization' : selection}):
+						pointer.delete_one({
+							'Organization' : selection,
+							})
+						st.success("Details Deleted Succesfully !!")
+					else:
+						st.error("No Such Record Exists !!")
+
+		if session_state_user.logout and session_state_user.button_sent == False:
+			if session_state_user.logout_count == 0:
+				session_state_user.option = ' '
+				session_state_user.is_logged_in = False
+				st.info("Please click logout once again to logout !!")
+				session_state_user.logout_count += 1
+			else:
+				st.info("You have succsessfully logged out !!")
+
+	elif user_choice == 'Random Password Generator':
+		random_password_generator()
 
 def register():
 # Page Title
@@ -390,8 +430,20 @@ def register():
 	submit = space[2].button("submit")
 
 	if submit:
-		if agree:
-			if password1 == password2:
+		if name == '':
+			st.warning('Name cannot be blank !!')
+		elif password1 == '':
+			st.error('Passwords cannot be empty !!')
+		elif email == '':
+			st.warning('Email cannot be empty !!')
+		elif username == '':
+			st.warning('Username cannot be blank !!') 
+		elif phone == '':
+			st.warning('Phone field cannot be blank !!')
+		elif agree:
+			if len(password1) < 5:
+				st.warning('Please enter a stronger Password !!')
+			elif password1 == password2:
 				exists = cursor.find_one({'username': username})
 				if exists:
 					st.error("This username already exists !!")
@@ -419,22 +471,37 @@ def register():
 		else:
 			st.warning("Please select the 'agree' checkbox !!")
 
-def home():
+
+
+session_state_user = SessionState.get(option = '', name = '', user_name = '', button_sent1 = False, button_sent = False, insert = False, update = False, view = False, delete = False, new = False, logout =False, logout_count = 0, home = True, is_logged_in = False)
+
+if session_state_user.is_logged_in == False:
+	menu = ['Home', 'Login', 'Register']
+	session_state_user.option = st.sidebar.selectbox("Menu", menu)
+	st.sidebar.subheader('Tips to keep your accounts safe: ')
+	st.sidebar.write('1. Never reveal your passwords to others.')
+	st.sidebar.write('2. Use different passwords for different accounts.')
+	st.sidebar.write('3. Use multi-factor authentication (MFA).')
+	# st.sidebar.write('4. Length trumps complexity.')
+	st.sidebar.write('5. Make passwords that are hard to guess but easy to remember.')
+	st.sidebar.image('./dash.jpg')
+	
+if session_state_user.option == 'Home':
 	st.title("Welcome to our Password Manager.")
 	st.subheader('''
-		PUT PASSWORDS IN THEIR PLACE
-		We'll Take Care Of Them For You ! ''')
+	PUT PASSWORDS IN THEIR PLACE
+	We'll Take Care Of Them For You ! ''')
 	st.write(" ")
 	st.write(" ")
 	st.write('''THE PASSWORD MANAGER, PERFECTED
-Keep track of all your passwords, whether you use them once a day or once a year.
+	Keep track of all your passwords, whether you use them once a day or once a year.
 
-Have them ready when you need them and instantly typed for you.''')
+	Have them ready when you need them and instantly typed for you.''')
 
 	st.write(" ")
 	st.write(" ")
 	st.subheader('What is a password manager?')
-	st.write("A password manager securely keeps track of all your passwords.")
+	st.write("A password manager securely keeps track of all your passwords.")	
 	st.write("It's the only way to create unique passwords for all your accounts, remember them, and have them typed for you online.")
 	st.write(" ")
 	st.write(" ")
@@ -450,6 +517,18 @@ Have them ready when you need them and instantly typed for you.''')
 	place = st.beta_columns(2)
 	st.write("For any Problem or Queries You can contact us at: passvault6217@gmail.com")
 
+
+if session_state_user.is_logged_in:
+	dashboard()
+
+if session_state_user.option == "Login" and session_state_user.is_logged_in == False:
+	session_state_user.home = False
+	login()
+elif session_state_user.option == "Register" and session_state_user.is_logged_in == False:
+	session_state_user.home = False
+	register()
+# elif session_state_user.option == "Random Password Generator":
+	# random_password_generator()
 #app = Multiapp()
 
 #app.add("Home", home)
@@ -460,14 +539,3 @@ Have them ready when you need them and instantly typed for you.''')
 #app.run()
 
 
-menu = ['Home','Login', 'Register', 'Random Password Generator']
-option = st.sidebar.selectbox("Menu", menu)
-
-if option == "Home":
-	home()
-elif option == "Login":
-	login()
-elif option == "Register":
-	register()
-elif option == "Random Password Generator":
-	random_password_generator()
